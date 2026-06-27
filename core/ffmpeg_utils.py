@@ -282,8 +282,12 @@ async def merge_videos(intro_path: str, main_path: str, output_path: str, work_d
         concat_str = f"concat:{intro_ts}|{main_ts}"
         cmd_merge_fallback = [
             FFMPEG, "-i", concat_str,
+            "-i", main_path,  # Second input to extract original stream metadata (like language)
             "-map", "0",
             "-c", "copy",
+            "-map_metadata:s:a", "1:s:a",  # Copy audio metadata from main_path
+            "-map_metadata:s:v", "1:s:v",  # Copy video metadata from main_path
+            "-map_metadata:s:s", "1:s:s",  # Copy subtitle metadata from main_path (if any)
             *meta,
             "-movflags", "+faststart",
             output_path, "-y"
@@ -298,8 +302,12 @@ async def merge_videos(intro_path: str, main_path: str, output_path: str, work_d
 
         cmd_merge = [
             FFMPEG, "-f", "concat", "-safe", "0", "-i", concat_list,
+            "-i", main_path,  # Second input to extract original stream metadata
             "-map", "0",
             "-c", "copy",
+            "-map_metadata:s:a", "1:s:a",  # Copy audio metadata from main_path
+            "-map_metadata:s:v", "1:s:v",  # Copy video metadata from main_path
+            "-map_metadata:s:s", "1:s:s",  # Copy subtitle metadata from main_path (if any)
             *tag_args,
             *meta,
             "-movflags", "+faststart",
