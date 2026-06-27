@@ -268,6 +268,11 @@ async def merge_videos(intro_path: str, main_path: str, output_path: str, work_d
     # Preserve the HEVC codec tag on the merged output as well
     tag_args = ["-tag:v", v_tag] if (v_codec == "hevc" and v_tag in ("hvc1", "hev1")) else []
 
+    stream_meta_args = ["-map_metadata:s:v:0", "1:s:v:0"]
+    if audio_count > 0:
+        for i in range(audio_count):
+            stream_meta_args.extend([f"-map_metadata:s:a:{i}", f"1:s:a:{i}"])
+
     if v_codec in ("h264", "hevc"):
         # For H264/HEVC, demuxer directly on MP4 can cause playback freezing due to SPS/PPS headers mismatch.
         # So we use the more reliable MPEG-TS protocol method (v1.0 logic) directly.
@@ -285,9 +290,7 @@ async def merge_videos(intro_path: str, main_path: str, output_path: str, work_d
             "-i", main_path,  # Second input to extract original stream metadata (like language)
             "-map", "0",
             "-c", "copy",
-            "-map_metadata:s:a", "1:s:a",  # Copy audio metadata from main_path
-            "-map_metadata:s:v", "1:s:v",  # Copy video metadata from main_path
-            "-map_metadata:s:s", "1:s:s",  # Copy subtitle metadata from main_path (if any)
+            *stream_meta_args,
             *meta,
             "-movflags", "+faststart",
             output_path, "-y"
@@ -305,9 +308,7 @@ async def merge_videos(intro_path: str, main_path: str, output_path: str, work_d
             "-i", main_path,  # Second input to extract original stream metadata
             "-map", "0",
             "-c", "copy",
-            "-map_metadata:s:a", "1:s:a",  # Copy audio metadata from main_path
-            "-map_metadata:s:v", "1:s:v",  # Copy video metadata from main_path
-            "-map_metadata:s:s", "1:s:s",  # Copy subtitle metadata from main_path (if any)
+            *stream_meta_args,
             *tag_args,
             *meta,
             "-movflags", "+faststart",
